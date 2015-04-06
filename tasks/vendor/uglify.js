@@ -2,7 +2,7 @@ module.exports = {
   dist: {
     options: {
       sourceMap: true,
-      compress: true,
+      compress: {},
       sourceMapName: '<%= yeoman.dist %>/ngMask.min.map'
     },
     files: {

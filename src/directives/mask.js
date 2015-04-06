@@ -56,6 +56,10 @@
                 restrict: ($attrs.restrict || $attrs.maskRestrict || 'select'), //select, reject, accept
                 // set validity mask
                 validate: (($attrs.validate || $attrs.maskValidate || 'true') === 'true'),
+                // set reversed mask
+                reverse: (($attrs.reverse || $attrs.maskReverse || 'false') === 'true'),
+                precision: ($attrs.precision || $attrs.maskPrecision ||  0),
+                precisionFill: ($attrs.precisionFill || $attrs.maskPrecisionFill || 0),
                 // default model value
                 model: $attrs.ngModel,
                 // default input value
@@ -95,7 +99,7 @@
                     var diffValueAndViewValueLengthIsOne = (value.length - viewValueWithDivisors.length) === 1;
                     var diffMaskAndViewValueIsGreaterThanZero = (maskWithoutOptionals.length - viewValueWithDivisors.length) > 0;
 
-                    if (options.restrict !== 'accept') {
+                    if (options.restrict !== 'accept' && !options.reverse) {
                       if (options.restrict === 'select' && (!validCurrentPosition || diffValueAndViewValueLengthIsOne)) {
                         var lastCharInputed = value[(value.length-1)];
                         var lastCharGenerated = viewValueWithDivisors[(viewValueWithDivisors.length-1)];
@@ -124,7 +128,7 @@
 
                     // Set validity
                     if (options.validate && controller.$dirty) {
-                      if (fullRegex.test(viewValueWithDivisors) || controller.$isEmpty(controller.$modelValue)) {
+                      if (options.reverse || fullRegex.test(viewValueWithDivisors) || controller.$isEmpty(controller.$modelValue)) {
                         controller.$setValidity('mask', true);
                       } else {
                         controller.$setValidity('mask', false);
@@ -143,7 +147,15 @@
 
                   // Update model, can be different of view value
                   if (options.clean) {
-                    return viewValueWithoutDivisors;
+                    if(parseInt(options.precision)) {
+                      if(options.reverse && viewValueWithoutDivisors == viewValueWithDivisors) {
+                        return parseFloat(parseInt(viewValueWithoutDivisors).toFixed(options.precision));
+                      } else {
+                        return parseFloat((parseInt(viewValueWithoutDivisors) / Math.pow(10, options.precision)).toFixed(options.precision));
+                      }
+                    } else {
+                      return viewValueWithoutDivisors;
+                    }
                   } else {
                     return viewValueWithDivisors;
                   }
@@ -156,10 +168,34 @@
                   $scope.$apply();
                 });
 
+                $element.on('blur', function () {
+                  var value = $element.val();
+                  var viewValue = maskService.getViewValue(value);
+                  var viewValueWithDivisors = viewValue.withDivisors(true);
+                  var viewValueWithoutDivisors = viewValue.withoutDivisors(true);
+                  if(options.precision && options.precisionFill && viewValueWithDivisors == viewValueWithoutDivisors) {
+                    var tmpValue = viewValueWithoutDivisors;
+                    for (var i=0; i<options.precision; i++) {
+                      tmpValue += options.precisionFill;
+                    }
+
+                    //viewValue = maskService.getViewValue(tmpValue);
+                    viewValueWithDivisors = maskService.getViewValue(tmpValue).withDivisors(true);
+                    console.log(viewValueWithDivisors);
+                    //viewValueWithoutDivisors = viewValue.withoutDivisors(true);
+                  }
+
+                  if(value != viewValueWithDivisors) {
+                    controller.$setViewValue(viewValueWithDivisors, 'input');
+                    controller.$render();
+                  }
+                });
+
                 // Register the watch to observe remote loading or promised data
                 // Deregister calling returned function
                 var watcher = $scope.$watch($scope.ngModel, function (newValue, oldValue) {
                   if (angular.isDefined(newValue)) {
+                    //newValue = getFilledPrecisionValue(newValue);
                     parseViewValue(newValue);
                     watcher();
                   }
@@ -174,6 +210,11 @@
                     controller.$render();
                   });
                 }
+
+                $timeout(function () {
+                  parseViewValue($element.val());
+                  $scope.$apply();
+                });
               });
             }
           }

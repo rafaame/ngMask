@@ -301,7 +301,12 @@
           <label>MASK: 39/19/9999</label>
           <br>
           <input type="text" name="date"
-                 mask="39/19/9999"
+                 mask="9999,99"
+                 mask-reverse="true"
+                 mask-clean="true"
+                 mask-precision="2"
+                 mask-precision-fill="0"
+                 ng-init="date = 30.00"
                  ng-model="date">
 
           <p>Model: {{date}}</p>

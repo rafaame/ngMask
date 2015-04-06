@@ -133,6 +133,8 @@
               regex.push(newRegex);
             }
 
+            console.log(divisors, divisorElements);
+
             generateOptionalDivisors();
             maskWithoutOptionalsAndDivisorsLength = removeDivisors(maskWithoutOptionals).length;
 
@@ -230,12 +232,32 @@
         function insertDivisors(array, combination) {
           function insert(array, output) {
             var out = output;
-            for (var i=0; i<array.length; i++) {
-              var divisor = array[i];
-              if (divisor < out.length) {
-                out.splice(divisor, 0, divisorElements[divisor]);
+
+            if(options.reverse) {
+              //var divisorInserted = false;
+              for (var i=array.length-1; i>=0; i--) {
+                var divisor = array[i];
+                if(divisor > maskWithoutOptionalsLength-out.length-1) {
+                  out.splice(out.length-(maskWithoutOptionalsLength-divisor-1), 0, divisorElements[divisor]);
+                  //divisorInserted = true;
+                }
+              }
+
+              /*if (!divisorInserted) {
+                console.log(out, options.precision, options.precisionFill);
+                for (var i=0; i<options.precision; i++) {
+                  out.push(options.precisionFill);
+                }
+              }*/
+            } else {
+              for (var i=0; i<array.length; i++) {
+                var divisor = array[i];
+                if (divisor < out.length) {
+                  out.splice(divisor, 0, divisorElements[divisor]);
+                }
               }
             }
+
             return out;
           }
 
@@ -327,11 +349,7 @@
                 }
               },
               withoutDivisors: function(capped) {
-                if (capped) {
-                  return outputWithoutDivisors.substr(0, maskWithoutOptionalsAndDivisorsLength);
-                } else {
-                  return outputWithoutDivisors;
-                }
+                return capped ? outputWithoutDivisors.substr(0, maskWithoutOptionalsAndDivisorsLength) : outputWithoutDivisors;
               }
             };
           } catch (e) {
